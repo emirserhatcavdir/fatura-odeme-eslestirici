@@ -1,0 +1,31 @@
+{
+  "source": "Kullanıcının 2026-09-26 tarihli bağımsız kabul senaryosu; uygulama çıktısından türetilmemiş sabit değerler.",
+  "report_date": "2026-06-30",
+  "summary_cents": {
+    "Toplam fatura": 500000,
+    "Eşleşen ödeme": 235000,
+    "Kalan borç": 275000,
+    "Gecikmiş borç": 125000,
+    "Fazla ödeme": 10000
+  },
+  "summary_tl": {
+    "Toplam fatura": "5000.00",
+    "Eşleşen ödeme": "2350.00",
+    "Kalan borç": "2750.00",
+    "Gecikmiş borç": "1250.00",
+    "Fazla ödeme": "100.00"
+  },
+  "invoices": [
+    {"fatura_no": "0001", "musteri": "Alfa", "fatura_tarihi": "2026-06-01", "vade_tarihi": "2026-06-10", "tutar_kurus": 100000, "toplam_odeme_kurus": 100000, "kalan_borc_kurus": 0, "fazla_odeme_kurus": 0, "durum": "Ödendi", "gecikme_gun": 0, "gecikme_grubu": "Gecikme yok", "tutar_tl": "1000.00", "toplam_odeme_tl": "1000.00", "kalan_borc_tl": "0.00", "fazla_odeme_tl": "0.00"},
+    {"fatura_no": "0002", "musteri": "Beta", "fatura_tarihi": "2026-06-01", "vade_tarihi": "2026-06-20", "tutar_kurus": 200000, "toplam_odeme_kurus": 75000, "kalan_borc_kurus": 125000, "fazla_odeme_kurus": 0, "durum": "Kısmen ödendi", "gecikme_gun": 10, "gecikme_grubu": "1–30 gün", "tutar_tl": "2000.00", "toplam_odeme_tl": "750.00", "kalan_borc_tl": "1250.00", "fazla_odeme_tl": "0.00"},
+    {"fatura_no": "0003", "musteri": "Gama", "fatura_tarihi": "2026-06-01", "vade_tarihi": "2026-07-10", "tutar_kurus": 150000, "toplam_odeme_kurus": 0, "kalan_borc_kurus": 150000, "fazla_odeme_kurus": 0, "durum": "Ödenmedi", "gecikme_gun": 0, "gecikme_grubu": "Gecikme yok", "tutar_tl": "1500.00", "toplam_odeme_tl": "0.00", "kalan_borc_tl": "1500.00", "fazla_odeme_tl": "0.00"},
+    {"fatura_no": "0004", "musteri": "Delta", "fatura_tarihi": "2026-06-01", "vade_tarihi": "2026-06-15", "tutar_kurus": 50000, "toplam_odeme_kurus": 60000, "kalan_borc_kurus": 0, "fazla_odeme_kurus": 10000, "durum": "Fazla ödeme", "gecikme_gun": 0, "gecikme_grubu": "Gecikme yok", "tutar_tl": "500.00", "toplam_odeme_tl": "600.00", "kalan_borc_tl": "0.00", "fazla_odeme_tl": "100.00"}
+  ],
+  "matched_payment_ids": ["P001", "P002", "P003", "P004"],
+  "payments_by_invoice": {"0001": ["P001", "P002"], "0002": ["P003"], "0003": [], "0004": ["P004"]},
+  "unmatched": [{"odeme_id": "P005", "fatura_no": "9999", "odeme_tarihi": "2026-06-25", "tutar_kurus": 25000, "neden": "Fatura bulunamadı", "tutar_tl": "250.00"}],
+  "future_payments": [{"odeme_id": "P006", "fatura_no": "0003", "odeme_tarihi": "2026-07-05", "tutar_kurus": 150000, "tutar_tl": "1500.00"}],
+  "aging_cents": {"1–30 gün": 125000, "31–60 gün": 0, "61–90 gün": 0, "90 üzeri gün": 0},
+  "filtered_invoice_ids": ["0002"],
+  "sheet_names": ["Rapor Bilgisi", "Özet", "Faturalar", "Eşleşen Ödemeler", "Eşleşmeyen Ödemeler", "Gelecek Faturalar", "Gelecek Ödemeler", "Gecikme Dağılımı"]
+}

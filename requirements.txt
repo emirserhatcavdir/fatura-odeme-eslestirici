@@ -1,0 +1,4 @@
+# Python 3.12; Streamlit Community Cloud ve yerel çalışma bağımlılıkları.
+streamlit==1.64.0
+pandas==2.3.3
+openpyxl==3.1.5
