@@ -4,7 +4,7 @@ Fatura ve ödeme dosyalarını fatura numarasıyla eşleştiren, tahsilat durumu
 
 Bu bağımsız bir uygulamadır. SAP veya banka bağlantısı, SAP onayı ve resmî muhasebe sistemi niteliği yoktur. `sap.py` yalnızca giriş dosyasının adıdır. Repodaki tüm örnekler ve kabul verileri tamamen hayalîdir.
 
-**Canlı demo:** Yayın ve çalışma doğrulaması tamamlandığında bağlantı burada yer alacak.
+**[Canlı demoyu aç](https://fatura-odeme-eslestirici-fzem6yzeg5bjswamwrqvdd.streamlit.app/)** · Dosya yüklemeden **Örnek verilerle dene** düğmesiyle başlayabilirsiniz.
 
 ## Bir dakikada dene
 
@@ -104,7 +104,9 @@ python3 -m venv .venv
 
 Testler para hassasiyeti, kesin eşleştirme, parçalı/fazla ödeme, tarih sınırları, veri doğrulama, arama/filtre/detay akışları ve güvenli CSV/Excel dışa aktarımını kapsar. Streamlit AppTest otomasyonu gerçek tarayıcı dosya diyaloğu testi değildir.
 
-Yayın hazırlığında Windows / Python 3.12 ortamında **133 test geçti**. Python 3.12/Linux için paketlerin çözümlenmesi `pip --dry-run` ile ayrıca başarılı oldu; yerel ortama yeni paket kurulmadı. Bu, Linux'ta uygulamayı çalıştırma veya gerçek bulut açılışı testi değildir. Canlı yayın, hesap girişi ve ayrı açılış doğrulaması gerektirir.
+Yayın hazırlığında Windows / Python 3.12 ortamında **133 test geçti**. Python 3.12/Linux için paketlerin çözümlenmesi `pip --dry-run` ile ayrıca başarılı oldu; yerel ortama yeni paket kurulmadı.
+
+26.09.2026 tarihinde herkese açık Community Cloud uygulaması tarayıcıda açıldı; **Örnek verilerle dene** akışı, 30.06.2026 raporlama tarihi ve yukarıdaki beş özet tutarı doğrulandı. **Tüm raporu Excel indir** düğmesinin tarayıcıda indirme olayı oluşturduğu kontrol edildi. Ayrıca canlı bulut uygulamasının ürettiği XLSX, uygulamanın indirme adresinden alınarak yeniden okundu: sekiz sayfa, raporlama tarihi, dokuz fatura, beş eşleşen ve iki eşleşmeyen ödeme, birer gelecek fatura/ödeme doğrulandı. 54 sayısal TL hücresinin gizli kuruş sütunlarıyla tam eşitliği, metin kimlikler ve baştaki sıfırlar, Türkçe karakterler ve gerçek tarih hücreleri kontrol edildi. Bu kontrol gerçek dosya yükleme diyaloğu veya Excel masaüstü uygulaması testi değildir.
 
 `acceptance_data/faturalar.csv`, `faturalar.xlsx`, `odemeler.csv` ve `odemeler.xlsx` yerleşik demodan ayrı, tamamen hayalî 4 fatura / 6 ödeme içerir. `expected_results.json` bağımsız sabit beklentilerdir.
 
@@ -126,7 +128,7 @@ Gerçek dışa aktarma işlevleriyle üretilen raporlar yeniden okunur; hücre t
 
 [Community Cloud](https://share.streamlit.io/) üzerinde **Create app → Yup, I have an app** yoluyla bu repoyu seçin. Branch: `main`; main file path: **`sap.py`**; Advanced settings → Python: **3.12**. Secrets alanı boş kalır. [Resmî yayın rehberi](https://docs.streamlit.io/deploy/streamlit-community-cloud/deploy-your-app/deploy).
 
-Kök dizindeki `requirements.txt` bulutta kurulur. [Bağımlılık rehberi](https://docs.streamlit.io/deploy/streamlit-community-cloud/deploy-your-app/app-dependencies). Demo adresi ancak yayın, örnek veri akışı ve Excel indirmesi doğrulandıktan sonra yukarıya eklenir.
+Kök dizindeki `requirements.txt` bulutta kurulur. [Bağımlılık rehberi](https://docs.streamlit.io/deploy/streamlit-community-cloud/deploy-your-app/app-dependencies). Yukarıdaki canlı demo bağlantısı, yayın, örnek veri akışı ve Excel indirmesi doğrulandıktan sonra eklenmiştir.
 
 ## Proje yapısı
 
