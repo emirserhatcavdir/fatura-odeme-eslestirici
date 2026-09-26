@@ -76,6 +76,7 @@ GitHub'a yalnızca denetlenen kaynaklar, testler, şablonlar ve hayalî veriler 
 Python **3.12** ile:
 
 ```powershell
+git clone https://github.com/emirserhatcavdir/fatura-odeme-eslestirici.git
 cd fatura-odeme-eslestirici
 python -m venv .venv
 .\.venv\Scripts\python.exe -m pip install -r requirements.txt
@@ -103,7 +104,7 @@ python3 -m venv .venv
 
 Testler para hassasiyeti, kesin eşleştirme, parçalı/fazla ödeme, tarih sınırları, veri doğrulama, arama/filtre/detay akışları ve güvenli CSV/Excel dışa aktarımını kapsar. Streamlit AppTest otomasyonu gerçek tarayıcı dosya diyaloğu testi değildir.
 
-Yayın hazırlığında Windows / Python 3.12 ortamında **133 test geçti**. Linux bağımlılık çözümlemesi ve gerçek bulut açılışı ayrı kontrollerdir; bu sonuç bulut yayınının tamamlandığı anlamına gelmez.
+Yayın hazırlığında Windows / Python 3.12 ortamında **133 test geçti**. Python 3.12/Linux için paketlerin çözümlenmesi `pip --dry-run` ile ayrıca başarılı oldu; yerel ortama yeni paket kurulmadı. Bu, Linux'ta uygulamayı çalıştırma veya gerçek bulut açılışı testi değildir. Canlı yayın, hesap girişi ve ayrı açılış doğrulaması gerektirir.
 
 `acceptance_data/faturalar.csv`, `faturalar.xlsx`, `odemeler.csv` ve `odemeler.xlsx` yerleşik demodan ayrı, tamamen hayalî 4 fatura / 6 ödeme içerir. `expected_results.json` bağımsız sabit beklentilerdir.
 
