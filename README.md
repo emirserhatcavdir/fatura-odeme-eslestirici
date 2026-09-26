@@ -4,11 +4,11 @@ Fatura ve ödeme dosyalarını fatura numarasıyla eşleştiren, tahsilat durumu
 
 Bu bağımsız bir uygulamadır. SAP veya banka bağlantısı, SAP onayı ve resmî muhasebe sistemi niteliği yoktur. `sap.py` yalnızca giriş dosyasının adıdır. Repodaki tüm örnekler ve kabul verileri tamamen hayalîdir.
 
-**[Canlı demoyu aç](https://fatura-odeme-eslestirici-fzem6yzeg5bjswamwrqvdd.streamlit.app/)** · Dosya yüklemeden **Örnek verilerle dene** düğmesiyle başlayabilirsiniz.
+**[Canlı demoyu aç](https://fatura-odeme-eslestirici-fzem6yzeg5bjswamwrqvdd.streamlit.app/)** · Dosya yüklemeden **Örnek raporu incele** düğmesiyle başlayabilirsiniz.
 
 ## Bir dakikada dene
 
-1. Uygulamayı açıp yan panelde **Örnek verilerle dene** düğmesine bas.
+1. Açılış ekranında **Örnek raporu incele** düğmesine bas. Yan paneldeki **Örnek verilerle dene** de aynı akışı açar.
 2. Raporlama tarihi otomatik olarak **30.06.2026** olur; dosya yüklemek gerekmez.
 3. Fatura numarası veya müşteriyle ara, durum/gecikme filtrelerini kullan. Fatura seçerek parçalı ve gelecek tarihli ödemeleri incele.
 4. **Filtreli faturaları CSV indir** veya **Tüm raporu Excel indir** düğmesiyle raporu al.
@@ -24,6 +24,12 @@ Yerleşik örnekte beklenen sonuçlar:
 | Fazla ödeme | 200,00 TL |
 
 `0005` iki parçalı ödemeyi, `0007` rapor tarihinden sonraki ödemeyi, `0003` ödemesiz faturayı gösterir. Boş şablonlar ve hayalî örnekler uygulamadan indirilebilir; dosyalar `veriler/` klasöründedir.
+
+### Kısa kullanım senaryosu
+
+Hayalî tahsilat raporunu açıp üstteki özet kartlarını incele. Arama alanına `0001` yaz: kartlar tek faturayı gösterir, kalan ve gecikmiş borç **2.000,00 TL** olur. Kartların yanındaki **Filtre uygulanıyor** açıklaması kapsamı belirtir. Faturayı seçip ödeme detayına bak; **Filtreli faturaları CSV indir** yalnızca bu faturayı, **Tüm raporu Excel indir** dokuz faturanın tamamını içerir. **Filtreleri temizle** ile rapor tarihini değiştirmeden tüm kayıtlara dön.
+
+Kartlar arama ve filtrelerin üstündedir; dar ekranda alt alta yerleşir. Geniş tablolar kendi alanlarında yatay kayar. Ekran görüntüsü aracı bu düzenleme sırasında görüntü üretemediği için temsili bir görsel eklenmemiştir.
 
 ## Özellikler ve iş kuralları
 
@@ -104,7 +110,7 @@ python3 -m venv .venv
 
 Testler para hassasiyeti, kesin eşleştirme, parçalı/fazla ödeme, tarih sınırları, veri doğrulama, arama/filtre/detay akışları ve güvenli CSV/Excel dışa aktarımını kapsar. Streamlit AppTest otomasyonu gerçek tarayıcı dosya diyaloğu testi değildir.
 
-Yayın hazırlığında Windows / Python 3.12 ortamında **133 test geçti**. Python 3.12/Linux için paketlerin çözümlenmesi `pip --dry-run` ile ayrıca başarılı oldu; yerel ortama yeni paket kurulmadı.
+Son arayüz düzenlemesinde Windows / Python 3.12 ortamında **134 test geçti**. Açılış düğmesi, özetin filtrelerden önce gelmesi ve aktif filtre açıklaması da kontrol edilir. Yayın hazırlığında Python 3.12/Linux için paketlerin çözümlenmesi `pip --dry-run` ile ayrıca başarılı oldu; yerel ortama yeni paket kurulmadı.
 
 26.09.2026 tarihinde herkese açık Community Cloud uygulaması tarayıcıda açıldı; **Örnek verilerle dene** akışı, 30.06.2026 raporlama tarihi ve yukarıdaki beş özet tutarı doğrulandı. **Tüm raporu Excel indir** düğmesinin tarayıcıda indirme olayı oluşturduğu kontrol edildi. Ayrıca canlı bulut uygulamasının ürettiği XLSX, uygulamanın indirme adresinden alınarak yeniden okundu: sekiz sayfa, raporlama tarihi, dokuz fatura, beş eşleşen ve iki eşleşmeyen ödeme, birer gelecek fatura/ödeme doğrulandı. 54 sayısal TL hücresinin gizli kuruş sütunlarıyla tam eşitliği, metin kimlikler ve baştaki sıfırlar, Türkçe karakterler ve gerçek tarih hücreleri kontrol edildi. Bu kontrol gerçek dosya yükleme diyaloğu veya Excel masaüstü uygulaması testi değildir.
 

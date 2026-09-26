@@ -17,7 +17,7 @@ APP = str(Path(__file__).resolve().parents[1] / "sap.py")
 def start_demo():
     app = AppTest.from_file(APP, default_timeout=30).run()
     assert not app.exception
-    app.button[0].click().run()
+    app.button(key="sidebar_demo").click().run()
     assert not app.exception
     return app
 
@@ -34,6 +34,20 @@ def test_initial_screen_and_demo():
     assert len(app.dataframe[0].value) == 9
 
 
+def test_main_demo_action_sets_date_and_places_current_summary_above_search():
+    app = AppTest.from_file(APP, default_timeout=30).run()
+    assert not app.exception and not app.metric
+    assert app.main.button(key="main_demo").label == "Örnek raporu incele"
+    app.main.button(key="main_demo").click().run()
+    assert not app.exception
+    assert app.date_input[0].value == DEMO_DATE
+    assert app.radio[0].value == "Örnek veriler"
+    assert metrics(app)["Toplam fatura"] == "19.050,75 TL"
+    elements = list(app.main)
+    assert next(i for i, item in enumerate(elements) if item.type == "metric") < next(i for i, item in enumerate(elements) if item.type == "text_input")
+    assert not any("Filtre uygulanıyor" in item.value for item in app.caption)
+
+
 def test_filters_change_cards_and_invoices_but_not_excel():
     app = start_demo()
     excel_before = app.session_state["report_bundle"]["excel"]
@@ -41,6 +55,7 @@ def test_filters_change_cards_and_invoices_but_not_excel():
     assert not app.exception
     assert metrics(app)["Kalan borç"] == "2.000,00 TL"
     assert len(app.dataframe[0].value) == 1
+    assert any("Filtre uygulanıyor · 1 / 9 fatura" in item.value for item in app.caption)
     assert app.session_state["report_bundle"]["excel"] == excel_before
     app.multiselect(key="customer_filter").set_value(["Hayalî Ada Kitap"]).run()
     assert not app.exception
@@ -133,6 +148,7 @@ def test_search_updates_cards_table_csv_but_keeps_full_excel():
     assert not app.exception
     assert metrics(app)["Kalan borç"] == "2.000,00 TL"
     assert app.dataframe[0].value["Fatura no"].tolist() == ["0001"]
+    assert any("Filtre uygulanıyor · 1 / 9 fatura" in item.value for item in app.caption)
     csv_call = next(call for call in downloads.call_args_list if call.args[0] == "Filtreli faturaları CSV indir")
     downloaded = pd.read_csv(BytesIO(csv_call.args[1]), dtype=str)
     assert downloaded["fatura_no"].tolist() == ["0001"]
@@ -170,6 +186,7 @@ def test_clear_filters_preserves_uploaded_files_reporting_date_and_excel():
     assert app.session_state["report_bundle"]["signature"] == initial_bundle["signature"]
     assert app.session_state["report_bundle"]["excel"] == initial_bundle["excel"]
     assert len(app.dataframe[0].value) == 9
+    assert not any("Filtre uygulanıyor" in item.value for item in app.caption)
 
 
 def test_old_cached_excel_is_replaced_without_resetting_report_or_search():
