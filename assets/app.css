@@ -20,6 +20,21 @@ h3 {font-size: 1.2rem !important; padding-bottom: .2rem !important;}
 .intro {color: #405570; font-size: 1rem; line-height: 1.5; margin: 0 0 .25rem;}
 .st-key-demo-callout {background: #eef8f6; border-color: #b6dcd6;}
 .st-key-demo-callout p {margin-bottom: 0; color: #172b45;}
+/* Yalnızca ana örnek rapor düğmesi; kutunun paragraf rengi etiketi ezmesin. */
+.st-key-main_demo button,
+.st-key-main_demo button:focus {
+    background-color: #0f766e; border-color: #0f766e; color: #ffffff;
+}
+.st-key-main_demo button p {color: inherit;}
+.st-key-main_demo button:hover {
+    background-color: #0c655e; border-color: #0c655e; color: #ffffff;
+}
+.st-key-main_demo button:active {
+    background-color: #0b5752; border-color: #0b5752; color: #ffffff;
+}
+.st-key-main_demo button:focus-visible {
+    outline: 3px solid #172b45; outline-offset: 3px;
+}
 .st-key-filter-grid [data-testid="stVerticalBlock"],
 .st-key-summary-panel {gap: .5rem;}
 [data-testid="stButton"] button, [data-testid="stDownloadButton"] button {border-radius: 8px; min-height: 2.5rem;}
