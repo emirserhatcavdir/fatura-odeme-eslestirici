@@ -10,7 +10,7 @@ Bu bağımsız bir uygulamadır. SAP veya banka bağlantısı, SAP onayı ve res
 
 1. Açılış ekranında **Örnek raporu incele** düğmesine bas. Yan paneldeki **Örnek verilerle dene** de aynı akışı açar.
 2. Raporlama tarihi otomatik olarak **30.06.2026** olur; dosya yüklemek gerekmez.
-3. Fatura numarası veya müşteriyle ara, durum/gecikme filtrelerini kullan. Fatura seçerek parçalı ve gelecek tarihli ödemeleri incele.
+3. Fatura numarası veya müşteriyle ara, durum/gecikme filtrelerini kullan. **Müşteri bazlı tahsilat özeti** bölümünden müşteri seçip faturalarını gör; **Müşteri seçimini temizle** ile diğer filtreleri ve rapor tarihini koruyarak tüm müşterilere dön. Fatura seçerek parçalı ve gelecek tarihli ödemeleri incele.
 4. **Filtreli faturaları CSV indir** veya **Tüm raporu Excel indir** düğmesiyle raporu al.
 
 Yerleşik örnekte beklenen sonuçlar:
@@ -41,6 +41,18 @@ Kartlar arama ve filtrelerin üstündedir; dar ekranda alt alta yerleşir. Geni�
 - Eksik/bozuk veri, yinelenen fatura numarası veya ödeme kimliği raporu engeller. Aynı faturaya ait farklı ödeme kayıtları mükerrer sayılmaz.
 - Arama ve filtreler kartları, grafiği, fatura tablosunu ve filtreli CSV'yi birlikte etkiler. **Excel her zaman tüm raporu içerir.** Filtreleri temizlemek yüklü verileri ve raporlama tarihini değiştirmez.
 
+### Müşteri bazlı tahsilat özeti
+
+Her müşteri için toplam fatura, eşleşen ödeme, kalan alacak, gecikmiş alacak, fazla ödeme, açık fatura sayısı ve en eski gecikme günü gösterilir. Varsayılan sıralama **gecikmiş alacak tutarına göre azalan** düzendedir. Mobilde satırlar iki sütunlu kartlara dönüşür; 20'den fazla müşteri varsa özet sayfalanır. Sayfalama fatura kapsamını değiştirmez.
+
+- Özet, mevcut fatura sonuçlarını tam sayı kuruşla toplar. **Açık fatura: kalan borcu > 0.** En eski gecikme, yalnızca açık ve gecikmiş faturaların en büyük gecikme günüdür; böyle bir fatura yoksa 0'dır. Gecikerek kapanmış faturalar bu değeri artırmaz.
+- Raporlama tarihi, arama, durum, gecikme ve müşteri seçimi; müşteri özetine, fatura listesine, kartlara, grafiğe ve filtreli CSV'ye aynı kapsamda uygulanır. Birden fazla müşteri seçilebilir. **Filtreleri temizle** tüm seçimleri; **Müşteri seçimini temizle** yalnızca müşteri seçimini temizler.
+- Eşleşen ödeme fazla ödemeyi içerir; fazla ödeme ayrı gösterilir ve başka faturaların borcundan düşülmez. Eşleşmeyen ödemeler müşterilere tahminen atanmaz. Gelecek faturalar/ödemeler toplamlara katılmaz; mevcut tarih sınırları korunur.
+- Fatura dosyasında isteğe bağlı **`musteri_id`** varsa kimlik kullanılır. Aynı adla farklı kimlikler ayrı, aynı kimlikle farklı adlar birlikte gösterilir. Kimliksiz kayıtlar yalnızca birebir müşteri adına göre gruplanır; benzer adlar, büyük/küçük harf ve Türkçe karakter farkları birleştirilmez. Kimliksiz kayıtlar aynı adlı kimlikli müşteriye atanmaz. Girişteki mevcut baş/son boşluk temizliği korunur.
+- Tam Excel'deki **Müşteri Özeti**, arayüz filtrelerinden bağımsız olarak raporlama tarihi kapsamındaki tüm müşterileri içerir. TL hücreleri sayısal ve iki ondalıklıdır; teknik kuruş alanları gizlidir. Kimlik verilmemiş eski dosyaların fatura CSV/Excel sütunları korunur; kimlik verilmişse `musteri_id` ayrıca aktarılır.
+
+Örneğin 30.06.2026 demosunda **Hayalî Ada Kitap**: 1.600,25 TL fatura, 1.200,00 TL eşleşen ödeme, 600,25 TL kalan alacak, 0,00 TL gecikmiş alacak, 200,00 TL fazla ödeme, 1 açık fatura ve 0 gün en eski gecikme. Fazla ödeme, açık faturanın 600,25 TL borcundan düşmez.
+
 ## Dosya biçimi
 
 Her veri türü için ayrı dosya yüklenir. CSV: UTF-8, virgülle ayrılmış. XLSX: ilk çalışma sayfası. Kimlikleri Excel'de **Metin** biçiminde hazırlayın; sayısal girişte önceden kaybolmuş sıfırlar geri getirilemez.
@@ -63,7 +75,7 @@ Tutarlar pozitif TL, ondalık ayırıcı nokta ve en fazla iki basamaktır; binl
 
 ## Excel ve CSV raporları
 
-Excel'in ilk sayfası **Özet**; üstünde belirgin raporlama tarihi bulunur. Diğer sayfalar: Rapor Bilgisi, Faturalar, Eşleşen Ödemeler, Eşleşmeyen Ödemeler, Gelecek Faturalar, Gelecek Ödemeler, Gecikme Dağılımı.
+Excel'in ilk sayfası **Özet**; üstünde belirgin raporlama tarihi bulunur. Diğer sayfalar: Rapor Bilgisi, **Müşteri Özeti**, Faturalar, Eşleşen Ödemeler, Eşleşmeyen Ödemeler, Gelecek Faturalar, Gelecek Ödemeler, Gecikme Dağılımı.
 
 Excel'deki TL tutarları iki ondalıklı **gerçek sayısal hücrelerdir**; `SUM`/`TOPLA` ve sayısal sıralama için kullanılabilir. Türkçe başlıklar, sütun filtreleri ve sabit başlıklar vardır. Teknik `*_kurus` sütunları silinmez, varsayılan olarak gizlenir. Kimlikler metin, tarihler `gg.aa.yyyy` görünümünde gerçek tarihtir.
 
@@ -108,9 +120,9 @@ python3 -m venv .venv
 .\.venv\Scripts\python.exe -m pytest -q
 ```
 
-Testler para hassasiyeti, kesin eşleştirme, parçalı/fazla ödeme, tarih sınırları, veri doğrulama, arama/filtre/detay akışları ve güvenli CSV/Excel dışa aktarımını kapsar. Streamlit AppTest otomasyonu gerçek tarayıcı dosya diyaloğu testi değildir.
+Testler para hassasiyeti, kesin eşleştirme, parçalı/fazla ödeme, tarih sınırları, veri doğrulama, arama/filtre/detay akışları ve güvenli CSV/Excel dışa aktarımını kapsar. Müşteri testleri ayrıca çoklu fatura, gecikerek kapanan fatura, bugünkü vade, gelecek kayıtlar, kimlik/ad ayrımı, aynı kapsamdaki toplamların fatura sonuçlarıyla eşitliği ve müşteri seçimini temizlemeyi denetler. Streamlit AppTest otomasyonu gerçek tarayıcı dosya diyaloğu testi değildir.
 
-Son arayüz düzenlemesinde Windows / Python 3.12 ortamında **134 test geçti**. Açılış düğmesi, özetin filtrelerden önce gelmesi ve aktif filtre açıklaması da kontrol edilir. Yayın hazırlığında Python 3.12/Linux için paketlerin çözümlenmesi `pip --dry-run` ile ayrıca başarılı oldu; yerel ortama yeni paket kurulmadı.
+28.09.2026 müşteri özeti güncellemesinde Windows / Python 3.12 ortamında **155 test geçti**. Müşteri seçimi/temizleme, aynı kapsamlı fatura toplamları ve dokuz sayfalı Excel'in sayısal TL hücreleri doğrulandı. Bu oturumda tarayıcı bağlantısı bulunmadığından gerçek tarayıcı tıklamaları ve mobil görünüm görsel olarak doğrulanamadı. Açılış düğmesi, özetin filtrelerden önce gelmesi ve aktif filtre açıklaması da otomatik testlerdedir. Önceki yayın hazırlığında Python 3.12/Linux için paketlerin çözümlenmesi `pip --dry-run` ile ayrıca başarılı oldu; yerel ortama yeni paket kurulmadı.
 
 26.09.2026 tarihinde herkese açık Community Cloud uygulaması tarayıcıda açıldı; **Örnek verilerle dene** akışı, 30.06.2026 raporlama tarihi ve yukarıdaki beş özet tutarı doğrulandı. **Tüm raporu Excel indir** düğmesinin tarayıcıda indirme olayı oluşturduğu kontrol edildi. Ayrıca canlı bulut uygulamasının ürettiği XLSX, uygulamanın indirme adresinden alınarak yeniden okundu: sekiz sayfa, raporlama tarihi, dokuz fatura, beş eşleşen ve iki eşleşmeyen ödeme, birer gelecek fatura/ödeme doğrulandı. 54 sayısal TL hücresinin gizli kuruş sütunlarıyla tam eşitliği, metin kimlikler ve baştaki sıfırlar, Türkçe karakterler ve gerçek tarih hücreleri kontrol edildi. Bu kontrol gerçek dosya yükleme diyaloğu veya Excel masaüstü uygulaması testi değildir.
 

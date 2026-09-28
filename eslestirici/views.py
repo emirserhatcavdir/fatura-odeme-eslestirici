@@ -5,6 +5,7 @@ import unicodedata
 import pandas as pd
 
 from .exports import safe_text
+from .customers import customer_key
 from .models import Report
 from .money import format_tl
 
@@ -29,7 +30,7 @@ def search_text(value: str) -> str:
     return "".join(char for char in unicodedata.normalize("NFKD", value.casefold()) if not unicodedata.combining(char))
 
 
-def filter_invoices(data: pd.DataFrame, customers=(), statuses=(), buckets=(), query: str = "") -> pd.DataFrame:
+def filter_invoices(data: pd.DataFrame, customers=(), statuses=(), buckets=(), query: str = "", *, customer_keys=()) -> pd.DataFrame:
     result = data
     for column, values in (("musteri", customers), ("durum", statuses), ("gecikme_grubu", buckets)):
         if values:
@@ -38,6 +39,10 @@ def filter_invoices(data: pd.DataFrame, customers=(), statuses=(), buckets=(), q
     if term:
         matches = result["fatura_no"].map(lambda value: term in search_text(value)) | result["musteri"].map(lambda value: term in search_text(value))
         result = result.loc[matches.astype(bool)]
+    if customer_keys:
+        keys = set(customer_keys)
+        mask = pd.Series([customer_key(row) in keys for row in result.to_dict("records")], index=result.index, dtype=bool)
+        result = result.loc[mask]
     return result.copy()
 
 
@@ -55,12 +60,14 @@ def invoice_detail(report: Report, invoice_id: str) -> dict | None:
 
 def invoice_table(data: pd.DataFrame, detailed: bool = False):
     columns = BASE_COLUMNS + (DETAIL_COLUMNS if detailed else [])
+    if "musteri_id" in data.columns:
+        columns = columns[:2] + ["musteri_id"] + columns[2:]
     view = data.loc[:, columns].reset_index(drop=True).map(safe_text)
     # Sayısal veri kuruş olarak kalır. Styler yalnızca görünen yazıyı değiştirir.
     money_columns = [column for column in columns if column.endswith("_kurus")]
     for column in money_columns:
         view[column] = view[column].astype("int64")
-    view = view.rename(columns=INVOICE_LABELS)
+    view = view.rename(columns={**INVOICE_LABELS, "musteri_id": "Müşteri kimliği"})
     formats = {INVOICE_LABELS[column]: format_tl for column in money_columns}
     formats.update({INVOICE_LABELS[column]: lambda value: value.strftime("%d.%m.%Y") for column in columns if column.endswith("_tarihi")})
 

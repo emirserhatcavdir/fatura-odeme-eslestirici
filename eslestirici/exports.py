@@ -9,8 +9,9 @@ from openpyxl.styles import Alignment, Font, PatternFill
 from openpyxl.utils import get_column_letter
 
 from .models import Issue, Report
+from .customers import CUSTOMER_COLUMNS, customer_summary
 from .money import decimal_amount, format_tl
-from .reconciliation import INVOICE_COLUMNS, INVOICE_RESULT_COLUMNS, PAYMENT_COLUMNS, aging_totals, summarize
+from .reconciliation import PAYMENT_COLUMNS, aging_totals, invoice_columns, summarize
 
 
 def safe_text(value: object) -> object:
@@ -24,7 +25,10 @@ def safe_text(value: object) -> object:
 
 def frame(rows: list[dict], columns: list[str]) -> pd.DataFrame:
     # dtype=object kimlikleri ve Python int değerlerini dönüştürmeden saklar.
-    return pd.DataFrame(rows, columns=columns, dtype=object)
+    result = pd.DataFrame(rows, columns=columns, dtype=object)
+    if "musteri_id" in result.columns:
+        result["musteri_id"] = result["musteri_id"].where(result["musteri_id"].notna(), None)
+    return result
 
 
 def export_frame(data: pd.DataFrame) -> pd.DataFrame:
@@ -41,7 +45,7 @@ def csv_bytes(data: pd.DataFrame) -> bytes:
 
 EXCEL_MONEY_FORMAT = '#,##0.00 "TL"'
 EXCEL_DATE_FORMAT = "dd.mm.yyyy"
-EXCEL_EXPORT_VERSION = 2
+EXCEL_EXPORT_VERSION = 3
 EXCEL_LABELS = {
     "fatura_no": "Fatura no", "musteri": "Müşteri", "fatura_tarihi": "Fatura tarihi",
     "vade_tarihi": "Vade tarihi", "toplam_odeme_tl": "Ödenen (TL)",
@@ -50,6 +54,8 @@ EXCEL_LABELS = {
     "gecikme_gun": "Gecikme günü", "gecikme_grubu": "Gecikme grubu",
     "odeme_id": "Ödeme kimliği", "odeme_tarihi": "Ödeme tarihi", "neden": "Açıklama",
     "gosterge": "Gösterge", "alan": "Alan", "deger": "Değer",
+    "musteri_id": "Müşteri kimliği", "gecikmis_alacak_tl": "Gecikmiş alacak (TL)",
+    "acik_fatura_sayisi": "Açık fatura sayısı", "en_eski_gecikme_gun": "En eski gecikme (gün)",
 }
 
 
@@ -78,6 +84,8 @@ def xlsx_bytes(sheets: dict[str, pd.DataFrame]) -> bytes:
         columns = [column.removesuffix("_kurus") + "_tl" if column in money_columns else column for column in data.columns]
         columns += money_columns
         labels = dict(EXCEL_LABELS) if is_report else {}
+        if title == "Müşteri Özeti":
+            labels.update(toplam_odeme_tl="Eşleşen ödeme (TL)", kalan_borc_tl="Kalan alacak (TL)")
         if "musteri" in data.columns and money_columns:
             labels["tutar_tl"] = "Fatura tutarı (TL)"
         elif "odeme_id" in data.columns and money_columns:
@@ -148,6 +156,8 @@ def report_sheets(report: Report) -> dict[str, pd.DataFrame]:
     info = [
         {"alan": "Raporlama tarihi", "deger": report.rapor_tarihi},
         {"alan": "Kapsam", "deger": "Excel tüm raporu içerir; arayüz filtreleri Excel'i etkilemez."},
+        {"alan": "Müşteri özeti", "deger": "Raporlama tarihi kapsamındaki tüm faturalar; gecikmiş alacak azalan sıralıdır. Eşleşmeyen ve gelecek ödemeler dahil değildir."},
+        {"alan": "Müşteri gruplama", "deger": "Varsa musteri_id, yoksa birebir müşteri adı kullanılır. Kimliksiz kayıtlar kimlikli müşterilere atanmaz. En eski gecikme yalnızca açık ve gecikmiş faturalardan hesaplanır."},
         {"alan": "Para birimi", "deger": "TL alanları iki ondalık basamaklı sayıdır. Tam sayı *_kurus sütunları korunur ve varsayılan olarak gizlidir."},
         {"alan": "Gecikme", "deger": "Yalnızca kalan borç, vade tarihinden sonraki gün gecikir."},
         {"alan": "Fazla ödeme", "deger": "Başka faturaların borcundan düşülmez."},
@@ -158,10 +168,11 @@ def report_sheets(report: Report) -> dict[str, pd.DataFrame]:
     return {
         "Özet": summary_frame,
         "Rapor Bilgisi": pd.DataFrame(info),
-        "Faturalar": frame(report.faturalar, INVOICE_RESULT_COLUMNS),
+        "Müşteri Özeti": frame(customer_summary(report.faturalar), CUSTOMER_COLUMNS),
+        "Faturalar": frame(report.faturalar, invoice_columns(report.faturalar)),
         "Eşleşen Ödemeler": frame(report.eslesen_odemeler, PAYMENT_COLUMNS),
         "Eşleşmeyen Ödemeler": frame(report.eslesmeyen_odemeler, PAYMENT_COLUMNS + ["neden"]),
-        "Gelecek Faturalar": frame(report.gelecek_faturalar, INVOICE_COLUMNS),
+        "Gelecek Faturalar": frame(report.gelecek_faturalar, invoice_columns(report.gelecek_faturalar, results=False)),
         "Gelecek Ödemeler": frame(report.gelecek_odemeler, PAYMENT_COLUMNS),
         "Gecikme Dağılımı": frame(aging_totals(report.faturalar), ["gecikme_grubu", "borc_kurus"]),
     }
@@ -174,6 +185,7 @@ def issues_frame(issues: list[Issue]) -> pd.DataFrame:
 
 
 DISPLAY_LABELS = {
+    "musteri_id": "Müşteri kimliği",
     "fatura_no": "Fatura no", "musteri": "Müşteri", "fatura_tarihi": "Fatura tarihi", "vade_tarihi": "Vade tarihi",
     "tutar_kurus": "Tutar (TL)", "toplam_odeme_kurus": "Toplam ödeme (TL)", "kalan_borc_kurus": "Kalan borç (TL)",
     "fazla_odeme_kurus": "Fazla ödeme (TL)", "durum": "Durum", "gecikme_gun": "Gecikme (gün)",

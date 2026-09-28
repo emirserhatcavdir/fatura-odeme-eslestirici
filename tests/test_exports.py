@@ -43,7 +43,7 @@ def test_excel_report_has_all_sheets_and_report_date():
     report, errors = process_files(invoices, "a.csv", payments, "b.csv", DEMO_DATE)
     assert not errors
     workbook = load_workbook(BytesIO(xlsx_bytes(report_sheets(report))))
-    assert len(workbook.sheetnames) == 8
+    assert len(workbook.sheetnames) == 9
     assert workbook.sheetnames[0] == "Özet"
     assert workbook["Rapor Bilgisi"]["B2"].value == datetime(2026, 6, 30)
     assert workbook["Özet"]["B1"].value == datetime(2026, 6, 30)

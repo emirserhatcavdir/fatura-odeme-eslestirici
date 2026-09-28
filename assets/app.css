@@ -57,6 +57,25 @@ h3 {font-size: 1.2rem !important; padding-bottom: .2rem !important;}
 [data-testid="stDataFrame"], [data-testid="stVegaLiteChart"] {max-width: 100%; min-width: 0;}
 [data-testid="stDataFrame"] {overflow-x: auto;}
 .st-key-invoice-detail [data-testid="stText"] {white-space: pre-wrap; overflow-wrap: anywhere;}
+.st-key-customer-panel [data-testid="stVerticalBlock"] {gap: .5rem;}
+.customer-summary {overflow-x: auto; color: #172b45;}
+.customer-summary table {border-collapse: collapse; width: 100%; font-size: .85rem; font-variant-numeric: tabular-nums;}
+.customer-summary th, .customer-summary td {padding: .6rem .55rem; border-bottom: 1px solid #dce4ed; text-align: right; vertical-align: middle;}
+.customer-summary thead {background: #eef8f6;}
+.customer-summary th:first-child {text-align: left; min-width: 10rem;}
+.customer-summary td {white-space: nowrap;}
+.customer-summary small {display: block; color: #405570; font-weight: 400; margin-top: .2rem;}
+.customer-summary td[data-label="Gecikmiş alacak"] {font-weight: 700; color: #8f2331;}
+@media (max-width: 700px) {
+    .st-key-customer-panel [data-testid="stHorizontalBlock"] {flex-direction: column; gap: .5rem;}
+    .st-key-customer-panel [data-testid="stColumn"] {width: 100% !important; min-width: 0 !important;}
+    .customer-summary table, .customer-summary tbody {display: block;}
+    .customer-summary thead {position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%);}
+    .customer-summary tr {display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); border: 1px solid #dce4ed; border-radius: 8px; margin-bottom: .6rem; padding: .3rem;}
+    .customer-summary th[scope="row"] {grid-column: 1 / -1; background: #eef8f6; min-width: 0; overflow-wrap: anywhere;}
+    .customer-summary td {text-align: left; white-space: normal; overflow-wrap: anywhere; border: 0;}
+    .customer-summary td::before {content: attr(data-label); display: block; color: #405570; font-size: .75rem; font-weight: 400; margin-bottom: .2rem;}
+}
 @media (max-width: 1550px) {
     .st-key-summary [data-testid="stHorizontalBlock"],
     [data-testid="stHorizontalBlock"].st-key-summary {grid-template-columns: repeat(3, minmax(0, 1fr));}

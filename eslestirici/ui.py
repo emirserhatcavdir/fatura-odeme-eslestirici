@@ -1,14 +1,22 @@
 """Streamlit görünümü; finans hesapları reconciliation modülündedir."""
 
+from html import escape
+
 import pandas as pd
 import streamlit as st
 
 from .exports import display_frame, frame, safe_text
+from .customers import customer_key, customer_summary
 from .money import format_tl
 from .reconciliation import AGING_BUCKETS, aging_totals
 from .views import invoice_detail, invoice_table
 
 FILTER_KEYS = ("customer_filter", "status_filter", "aging_filter")
+
+
+def clear_customer_selection() -> None:
+    st.session_state["customer_filter"] = []
+    st.session_state["selected_invoice"] = None
 
 
 def clear_filters() -> None:
@@ -30,10 +38,55 @@ def show_invoice_table(data: pd.DataFrame, detailed: bool) -> None:
                      column_config={"Müşteri": st.column_config.TextColumn(width="medium")})
 
 
+def customer_options(rows: list[dict]) -> dict:
+    return {
+        customer_key(row): row["musteri"] + (f" · Kimlik: {row['musteri_id']}" if row["musteri_id"] is not None else " · Kimlik yok")
+        for row in customer_summary(rows)
+    }
+
+
+def customer_summary_html(rows: list[dict]) -> str:
+    """Aynı tablo masaüstünde satır, mobilde iki sütunlu müşteri kartıdır."""
+    fields = [
+        ("tutar_kurus", "Toplam fatura"), ("toplam_odeme_kurus", "Eşleşen ödeme"),
+        ("kalan_borc_kurus", "Kalan alacak"), ("gecikmis_alacak_kurus", "Gecikmiş alacak"),
+        ("fazla_odeme_kurus", "Fazla ödeme"), ("acik_fatura_sayisi", "Açık fatura"),
+        ("en_eski_gecikme_gun", "En eski gecikme (gün)"),
+    ]
+    body = []
+    for row in rows:
+        identity = f"Kimlik: {row['musteri_id']}" if row["musteri_id"] is not None else "Kimlik yok · Birebir ad"
+        cells = [f'<th scope="row">{escape(row["musteri"])}<small>{escape(identity)}</small></th>']
+        for field, label in fields:
+            value = format_tl(row[field]) if field.endswith("_kurus") else str(row[field])
+            cells.append(f'<td data-label="{label}">{escape(value)}</td>')
+        body.append("<tr>" + "".join(cells) + "</tr>")
+    headers = '<th scope="col">Müşteri</th>' + "".join(f'<th scope="col">{label}</th>' for _, label in fields)
+    return '<div class="customer-summary"><table aria-label="Müşteri bazlı tahsilat özeti"><thead><tr>' + headers + '</tr></thead><tbody>' + "".join(body) + '</tbody></table></div>'
+
+
+def show_customer_summary(rows: list[dict]) -> None:
+    customers = customer_summary(rows)
+    st.caption(f"{len(customers)} müşteri · {len(rows)} fatura · Gecikmiş alacak tutarına göre büyükten küçüğe.")
+    if not customers:
+        st.info("Bu tarih ve filtrelerde gösterilecek müşteri yok.")
+        return
+    # Büyük yüklemelerde binlerce HTML kartını aynı anda oluşturma.
+    page_size = 20
+    pages = (len(customers) + page_size - 1) // page_size
+    page = 1
+    if pages > 1:
+        page = st.number_input("Müşteri özeti sayfası", min_value=1, max_value=pages, value=1, step=1)
+        st.caption(f"Sayfa {page} / {pages} · Her sayfada en fazla {page_size} müşteri; fatura kapsamı değişmez.")
+    st.html(customer_summary_html(customers[(page - 1) * page_size:page * page_size]))
+
+
 def show_rules() -> None:
     with st.expander("Dosya biçimi ve iş kuralları"):
         st.markdown("""
 **Faturalar:** `fatura_no, musteri, fatura_tarihi, vade_tarihi, tutar`
+
+İsteğe bağlı `musteri_id` sütunu müşteri kimliğidir. Varsa kimliğe, yoksa birebir ada göre gruplanır; benzer adlar veya kimliksiz kayıtlar kimlikli müşterilerle birleştirilmez.
 
 **Ödemeler:** `odeme_id, fatura_no, odeme_tarihi, tutar`
 

@@ -13,6 +13,19 @@ PAYMENT_COLUMNS = ["odeme_id", "fatura_no", "odeme_tarihi", "tutar_kurus"]
 INVOICE_COLUMNS = ["fatura_no", "musteri", "fatura_tarihi", "vade_tarihi", "tutar_kurus"]
 
 
+def invoice_record(invoice: Fatura) -> dict:
+    row = asdict(invoice)
+    if row["musteri_id"] is None:
+        row.pop("musteri_id")
+    return row
+
+
+def invoice_columns(rows: list[dict], *, results: bool = True) -> list[str]:
+    """Kimlik verilmeyen eski dosyaların CSV/Excel sütunlarını koru."""
+    columns = INVOICE_RESULT_COLUMNS if results else INVOICE_COLUMNS
+    return columns + (["musteri_id"] if any(row.get("musteri_id") is not None for row in rows) else [])
+
+
 def aging_bucket(days: int) -> str:
     if days <= 0:
         return "Gecikme yok"
@@ -33,7 +46,7 @@ def reconcile(invoices: list[Fatura], payments: list[Odeme], as_of: date) -> Rep
         raise ValueError("Yinelenen odeme_id ile rapor üretilemez.")
     eligible = {item.fatura_no: item for item in invoices if item.fatura_tarihi <= as_of}
     all_invoice_ids = {item.fatura_no for item in invoices}
-    future_invoices = [asdict(item) for item in invoices if item.fatura_tarihi > as_of]
+    future_invoices = [invoice_record(item) for item in invoices if item.fatura_tarihi > as_of]
     future_payments, unmatched, matched = [], [], []
     paid = defaultdict(int)
     for payment in payments:
@@ -60,7 +73,7 @@ def reconcile(invoices: list[Fatura], payments: list[Odeme], as_of: date) -> Rep
         else:
             status = "Ödenmedi"
         days = max((as_of - invoice.vade_tarihi).days, 0) if debt else 0
-        results.append({**asdict(invoice), "toplam_odeme_kurus": total, "kalan_borc_kurus": debt, "fazla_odeme_kurus": excess, "durum": status, "gecikme_gun": days, "gecikme_grubu": aging_bucket(days)})
+        results.append({**invoice_record(invoice), "toplam_odeme_kurus": total, "kalan_borc_kurus": debt, "fazla_odeme_kurus": excess, "durum": status, "gecikme_gun": days, "gecikme_grubu": aging_bucket(days)})
     return Report(as_of, results, matched, unmatched, future_invoices, future_payments)
 
 

@@ -57,10 +57,17 @@ def _validate(table: Table, invoice: bool) -> tuple[list, list[Issue]]:
         if len(parsed) != len(required):
             continue
         if invoice:
+            customer_id = None
+            if row.get("musteri_id") is not None and str(row["musteri_id"]).strip():
+                try:
+                    customer_id = _required_text(row["musteri_id"])
+                except ValueError as exc:
+                    errors.append(Issue(table.filename, number, "musteri_id", str(exc)))
+                    continue
             if parsed["vade_tarihi"] < parsed["fatura_tarihi"]:
                 errors.append(Issue(table.filename, number, "vade_tarihi", "Vade tarihi fatura tarihinden önce olamaz."))
                 continue
-            records.append(Fatura(parsed["fatura_no"], parsed["musteri"], parsed["fatura_tarihi"], parsed["vade_tarihi"], parsed["tutar"]))
+            records.append(Fatura(parsed["fatura_no"], parsed["musteri"], parsed["fatura_tarihi"], parsed["vade_tarihi"], parsed["tutar"], customer_id))
         else:
             records.append(Odeme(parsed["odeme_id"], parsed["fatura_no"], parsed["odeme_tarihi"], parsed["tutar"]))
     for identifier, row_numbers in identifiers.items():

@@ -28,6 +28,7 @@ class Fatura:
     fatura_tarihi: date
     vade_tarihi: date
     tutar_kurus: int
+    musteri_id: str | None = None
 
 
 @dataclass(frozen=True)

@@ -5,11 +5,12 @@ from unittest.mock import patch
 
 import pandas as pd
 import streamlit as st
+from openpyxl import load_workbook
 from streamlit.dataframe_util import convert_arrow_bytes_to_pandas_df
 from streamlit.testing.v1 import AppTest
 
 from eslestirici.demo import DEMO_DATE, demo_bytes, sample_frame
-from eslestirici.exports import csv_bytes, xlsx_bytes
+from eslestirici.exports import EXCEL_EXPORT_VERSION, csv_bytes, xlsx_bytes
 
 APP = str(Path(__file__).resolve().parents[1] / "sap.py")
 
@@ -57,7 +58,7 @@ def test_filters_change_cards_and_invoices_but_not_excel():
     assert len(app.dataframe[0].value) == 1
     assert any("Filtre uygulanıyor · 1 / 9 fatura" in item.value for item in app.caption)
     assert app.session_state["report_bundle"]["excel"] == excel_before
-    app.multiselect(key="customer_filter").set_value(["Hayalî Ada Kitap"]).run()
+    app.multiselect(key="customer_filter").set_value([("name", "Hayalî Ada Kitap")]).run()
     assert not app.exception
     assert metrics(app)["Toplam fatura"] == "0,00 TL"
 
@@ -172,7 +173,7 @@ def test_clear_filters_preserves_uploaded_files_reporting_date_and_excel():
         app.run()
         initial_bundle = app.session_state["report_bundle"]
         app.text_input(key="invoice_search").set_value("mavi")
-        app.multiselect(key="customer_filter").set_value(["Hayalî Mavi Kırtasiye"])
+        app.multiselect(key="customer_filter").set_value([("name", "Hayalî Mavi Kırtasiye")])
         app.multiselect(key="status_filter").set_value(["Kısmen ödendi"])
         app.multiselect(key="aging_filter").set_value(["1–30 gün"]).run()
         app.selectbox(key="selected_invoice").set_value("0001").run()
@@ -201,7 +202,7 @@ def test_old_cached_excel_is_replaced_without_resetting_report_or_search():
     assert app.text_input(key="invoice_search").value == "mavi"
     assert app.session_state["report_bundle"]["signature"] == signature
     assert app.session_state["report_bundle"]["excel"].startswith(b"PK")
-    assert app.session_state["report_bundle"]["excel_version"] == 2
+    assert app.session_state["report_bundle"]["excel_version"] == EXCEL_EXPORT_VERSION
 
 
 def test_excel_precision_error_preserves_csv_download_and_report():
@@ -341,3 +342,85 @@ def test_empty_reporting_date_does_not_show_previous_report():
     assert not app.exception
     assert not app.metric
     assert any("bir raporlama tarihi seç" in item.value for item in app.info)
+
+
+def customer_html(app):
+    return next(item.proto.body for item in app.get("html") if 'class="customer-summary"' in item.proto.body)
+
+
+def test_customer_selection_clear_and_full_excel_scope():
+    app = start_demo()
+    initial_excel = app.session_state["report_bundle"]["excel"]
+    html = customer_html(app)
+    assert html.index("Hayalî Lale Tasarım") < html.index("Hayalî Ufuk Seramik") < html.index("Hayalî Mavi Kırtasiye")
+    app.multiselect(key="customer_filter").set_value([("name", "Hayalî Ada Kitap")]).run()
+    assert not app.exception
+    assert app.dataframe[0].value["Fatura no"].tolist() == ["0004", "0007"]
+    html = customer_html(app)
+    assert "Hayalî Ada Kitap" in html and "Hayalî Mavi Kırtasiye" not in html
+    assert 'data-label="Kalan alacak">600,25 TL' in html
+    assert 'data-label="Fazla ödeme">200,00 TL' in html
+    assert 'data-label="Açık fatura">1' in html
+    assert 'data-label="En eski gecikme (gün)">0' in html
+    assert app.session_state["report_bundle"]["excel"] == initial_excel
+    workbook = load_workbook(BytesIO(initial_excel))
+    assert workbook["Müşteri Özeti"].max_row == 6
+    assert workbook["Faturalar"].max_row == 10
+    workbook.close()
+    app.selectbox(key="selected_invoice").set_value("0004").run()
+    app.button(key="clear_customer").click().run()
+    assert not app.exception
+    assert app.multiselect(key="customer_filter").value == []
+    assert app.selectbox(key="selected_invoice").value is None
+    assert len(app.dataframe[0].value) == 9
+    assert app.date_input[0].value == DEMO_DATE
+    assert customer_html(app).count('<th scope="row">') == 5
+
+
+def test_clear_customer_keeps_search_status_and_aging_filters():
+    app = start_demo()
+    app.text_input(key="invoice_search").set_value("hayali")
+    app.multiselect(key="status_filter").set_value(["Ödenmedi"])
+    app.multiselect(key="aging_filter").set_value(["1–30 gün", "31–60 gün", "61–90 gün", "90 üzeri gün"])
+    app.multiselect(key="customer_filter").set_value([("name", "Hayalî Ufuk Seramik")]).run()
+    assert app.dataframe[0].value["Fatura no"].tolist() == ["0009", "0010"]
+    assert 'data-label="Gecikmiş alacak">3.700,00 TL' in customer_html(app)
+    app.button(key="clear_customer").click().run()
+    assert not app.exception
+    assert app.text_input(key="invoice_search").value == "hayali"
+    assert app.multiselect(key="status_filter").value == ["Ödenmedi"]
+    assert len(app.multiselect(key="aging_filter").value) == 4
+    assert app.dataframe[0].value["Fatura no"].tolist() == ["0003", "0009", "0010"]
+    assert customer_html(app).count('<th scope="row">') == 2
+
+
+def test_date_change_clears_customer_and_recalculates_summary():
+    app = start_demo()
+    app.multiselect(key="customer_filter").set_value([("name", "Hayalî Ada Kitap")]).run()
+    app.date_input[0].set_value(date(2026, 7, 1)).run()
+    assert not app.exception
+    assert app.multiselect(key="customer_filter").value == []
+    app.multiselect(key="customer_filter").set_value([("name", "Hayalî Ada Kitap")]).run()
+    assert 'data-label="Kalan alacak">0,00 TL' in customer_html(app)
+    assert 'data-label="Açık fatura">0' in customer_html(app)
+    assert 'data-label="Eşleşen ödeme">1.800,25 TL' in customer_html(app)
+
+
+def test_same_name_customer_ids_select_separate_invoices():
+    invoices, payments = demo_bytes()
+    data = pd.read_csv(BytesIO(invoices), dtype=str)
+    data["musteri_id"] = ["001", None, None, None, None, "002", None, None, None, None]
+    invoices = csv_bytes(data)
+
+    def uploader(label, **kwargs):
+        return Upload(invoices, "faturalar.csv") if kwargs["key"] == "invoice_upload" else Upload(payments, "odemeler.csv")
+
+    with patch("streamlit.file_uploader", side_effect=uploader):
+        app = AppTest.from_file(APP, default_timeout=30)
+        app.session_state["report_date"] = DEMO_DATE
+        app.run()
+        app.multiselect(key="customer_filter").set_value([("id", "002")]).run()
+    assert not app.exception
+    assert app.dataframe[0].value["Fatura no"].tolist() == ["0006"]
+    assert app.dataframe[0].value["Müşteri kimliği"].tolist() == ["002"]
+    assert 'data-label="Toplam fatura">800,00 TL' in customer_html(app)

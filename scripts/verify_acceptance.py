@@ -31,12 +31,15 @@ EXCEL_FIELDS = {
     "Ödeme tutarı (TL)": "tutar_tl", "Açıklama": "neden",
     "Gösterge": "gosterge", "Tutar (TL)": "tutar_tl",
     "Gecikmiş borç (TL)": "borc_tl", "Alan": "alan", "Değer": "deger",
+    "Müşteri kimliği": "musteri_id", "Eşleşen ödeme (TL)": "toplam_odeme_tl",
+    "Kalan alacak (TL)": "kalan_borc_tl", "Gecikmiş alacak (TL)": "gecikmis_alacak_tl",
+    "Açık fatura sayısı": "acik_fatura_sayisi", "En eski gecikme (gün)": "en_eski_gecikme_gun",
 }
 
 
 def expected_for(report_date: str) -> dict:
     expected = json.loads((DATA / "expected_results.json").read_text(encoding="utf-8"))
-    expected["sheet_names"] = ["Özet", "Rapor Bilgisi", "Faturalar", "Eşleşen Ödemeler", "Eşleşmeyen Ödemeler", "Gelecek Faturalar", "Gelecek Ödemeler", "Gecikme Dağılımı"]
+    expected["sheet_names"] = ["Özet", "Rapor Bilgisi", "Müşteri Özeti", "Faturalar", "Eşleşen Ödemeler", "Eşleşmeyen Ödemeler", "Gelecek Faturalar", "Gelecek Ödemeler", "Gecikme Dağılımı"]
     if report_date == "2026-09-26":
         # Kullanıcının ikinci tarih için verdiği sabitler; uygulamadan türetilmez.
         expected["report_date"] = "2026-09-26"
@@ -143,6 +146,9 @@ def verify_case(extension: str, output_folder: Path, report_date: str = "2026-06
         summary = sheet_rows(workbook["Özet"])
         assert {row["gosterge"]: row["tutar_kurus"] for row in summary} == expected["summary_cents"]
         assert {row["gosterge"]: row["tutar_tl"] for row in summary} == expected["summary_tl"]
+        customers = sheet_rows(workbook["Müşteri Özeti"])
+        for field, metric in (("tutar_kurus", "Toplam fatura"), ("toplam_odeme_kurus", "Eşleşen ödeme"), ("kalan_borc_kurus", "Kalan borç"), ("gecikmis_alacak_kurus", "Gecikmiş borç"), ("fazla_odeme_kurus", "Fazla ödeme")):
+            assert sum(row[field] for row in customers) == expected["summary_cents"][metric]
         assert_rows(sheet_rows(workbook["Faturalar"]), expected["invoices"])
         assert all(cell.data_type == "s" for cell in list(workbook["Faturalar"].columns)[0][1:])
         assert_rows(sheet_rows(workbook["Eşleşmeyen Ödemeler"]), expected["unmatched"])

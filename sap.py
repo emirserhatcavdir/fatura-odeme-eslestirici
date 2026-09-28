@@ -10,8 +10,8 @@ from eslestirici.demo import DEMO_DATE, demo_bytes, sample_frame
 from eslestirici.exports import csv_bytes, frame, issues_frame, report_sheets, safe_text, xlsx_bytes
 from eslestirici.exports import EXCEL_EXPORT_VERSION, ExcelPrecisionError
 from eslestirici.money import format_tl
-from eslestirici.reconciliation import AGING_BUCKETS, INVOICE_COLUMNS, INVOICE_RESULT_COLUMNS, PAYMENT_COLUMNS, STATUSES, process_files, summarize
-from eslestirici.ui import clear_filters, show_aging_chart, show_invoice_detail, show_invoice_table, show_rules, show_table
+from eslestirici.reconciliation import AGING_BUCKETS, PAYMENT_COLUMNS, STATUSES, invoice_columns, process_files, summarize
+from eslestirici.ui import clear_customer_selection, clear_filters, customer_options, show_customer_summary, show_aging_chart, show_invoice_detail, show_invoice_table, show_rules, show_table
 from eslestirici.views import filter_invoices
 
 st.set_page_config(page_title="Fatura–Ödeme Eşleştirici", page_icon="₺", layout="wide")
@@ -70,7 +70,7 @@ else:
         st.subheader("Dosyalarını yükle")
         left, right = st.columns(2)
         with left:
-            invoice_upload = st.file_uploader("Fatura dosyası", type=["csv", "xlsx"], key="invoice_upload", help="fatura_no, musteri, fatura_tarihi, vade_tarihi, tutar")
+            invoice_upload = st.file_uploader("Fatura dosyası", type=["csv", "xlsx"], key="invoice_upload", help="fatura_no, musteri, fatura_tarihi, vade_tarihi, tutar · İsteğe bağlı: musteri_id")
         with right:
             payment_upload = st.file_uploader("Ödeme dosyası", type=["csv", "xlsx"], key="payment_upload", help="odeme_id, fatura_no, odeme_tarihi, tutar")
         st.caption("İki dosya hazır olduğunda kontroller ve eşleştirme otomatik çalışır.")
@@ -88,7 +88,7 @@ else:
     invoice_bytes, payment_bytes = invoice_upload.getvalue(), payment_upload.getvalue()
     invoice_name, payment_name = invoice_upload.name, payment_upload.name
 
-signature = (source, sha256(invoice_bytes).hexdigest(), invoice_name, sha256(payment_bytes).hexdigest(), payment_name, as_of.isoformat())
+signature = (3, source, sha256(invoice_bytes).hexdigest(), invoice_name, sha256(payment_bytes).hexdigest(), payment_name, as_of.isoformat())
 bundle = st.session_state.get("report_bundle")
 if bundle is None or bundle["signature"] != signature:
     with st.spinner("Dosyalar kontrol ediliyor ve rapor hazırlanıyor…"):
@@ -108,25 +108,36 @@ if issues:
     st.stop()
 
 st.caption(f"Raporlama: {as_of:%d.%m.%Y} · {len(report.faturalar)} fatura · {len(report.eslesen_odemeler)} eşleşen ödeme")
-invoices = frame(report.faturalar, INVOICE_RESULT_COLUMNS)
+invoices = frame(report.faturalar, invoice_columns(report.faturalar))
 # Yerini önce ayır, içeriğini güncel filtreler okunduktan sonra doldur.
 summary = st.container(key="summary-panel")
 with st.container(border=True, key="filter-grid"):
     search, reset = st.columns([4, 1], vertical_alignment="bottom")
     search.text_input("Fatura no veya müşteri ara", placeholder="Örneğin: 0001 veya Çınar", key="invoice_search")
     reset.button("Filtreleri temizle", on_click=clear_filters, key="clear_filters", width="stretch")
-    filter_columns = st.columns(3)
+    filter_columns = st.columns(2)
     with filter_columns[0]:
-        customers = st.multiselect("Müşteri", sorted(invoices["musteri"].unique()), placeholder="Tüm müşteriler", key="customer_filter")
-    with filter_columns[1]:
         statuses = st.multiselect("Durum", STATUSES, placeholder="Tüm durumlar", key="status_filter")
-    with filter_columns[2]:
+    with filter_columns[1]:
         buckets = st.multiselect("Gecikme", ("Gecikme yok", *AGING_BUCKETS), placeholder="Tüm gecikme grupları", key="aging_filter")
-    st.caption("Arama ve filtreler kartları, grafiği, faturaları ve CSV'yi etkiler. Excel ve diğer ödeme tabloları tüm raporu kapsar. Boş seçim tüm kayıtları gösterir.")
+    st.caption("Arama, durum, gecikme ve aşağıdaki müşteri seçimi; kartları, müşteri özetini, grafiği, faturaları ve CSV'yi birlikte etkiler. Excel ve diğer ödeme tabloları tüm raporu kapsar.")
+
+with st.container(border=True, key="customer-panel"):
+    st.subheader("Müşteri bazlı tahsilat özeti")
+    st.caption(f"{as_of:%d.%m.%Y} dahil · Arama, durum, gecikme ve müşteri seçimi uygulanır. Özet ve aşağıdaki fatura sonuçları aynı kapsamdadır.")
+    choose, clear = st.columns([4, 1], vertical_alignment="bottom")
+    options = customer_options(report.faturalar)
+    customers = choose.multiselect("Faturalarını görmek için müşteri seç", list(options), format_func=options.get,
+                                   placeholder="Tüm müşteriler", key="customer_filter")
+    clear.button("Müşteri seçimini temizle", on_click=clear_customer_selection, width="stretch", key="clear_customer")
+    customer_summary_container = st.container()
+    st.caption("Açık fatura: kalan borcu > 0. En eski gecikme yalnızca açık ve gecikmiş faturalardan alınır; yoksa 0 gündür. Eşleşen ödeme fazla ödemeyi içerir; fazla ödeme diğer borçlardan düşülmez. Eşleşmeyen ve gelecek ödemeler dahil değildir.")
 
 query = st.session_state["invoice_search"]
-filtered = filter_invoices(invoices, customers, statuses, buckets, query)
+filtered = filter_invoices(invoices, statuses=statuses, buckets=buckets, query=query, customer_keys=customers)
 rows = filtered.to_dict("records")
+with customer_summary_container:
+    show_customer_summary(rows)
 with summary:
     st.subheader("Rapor özeti")
     if customers or statuses or buckets or query.strip():
@@ -175,7 +186,7 @@ else:
 with st.expander(f"Gelecek tarihli kayıtlar ({len(report.gelecek_faturalar) + len(report.gelecek_odemeler)})"):
     st.caption("Tüm rapor kapsamı · Raporlama tarihinden sonraki kayıtlar hesaplara dahil edilmez.")
     st.markdown("**Gelecek faturalar**")
-    show_table(frame(report.gelecek_faturalar, INVOICE_COLUMNS))
+    show_table(frame(report.gelecek_faturalar, invoice_columns(report.gelecek_faturalar, results=False)))
     st.markdown("**Gelecek ödemeler**")
     show_table(frame(report.gelecek_odemeler, PAYMENT_COLUMNS))
 with st.expander(f"Eşleşen ödemeler ({len(report.eslesen_odemeler)})"):
